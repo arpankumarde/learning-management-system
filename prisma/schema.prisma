@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id     String       @id @default(uuid())
+  email       String       @unique
+  password    String
+  role        Role
+  firstName   String
+  lastName    String
+  isVerified  Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  courses     Course[]     @relation("InstructorCourses")
+  enrollments Enrollment[]
+  Instructor  Instructor?
+  Admin       Admin?
+}
+
+model Instructor {
+  instructor_id String  @id @default(uuid())
+  bio           String?
+  avatarUrl     String?
+  user          User    @relation(fields: [user_id], references: [user_id])
+  user_id       String  @unique
+}
+
+model Admin {
+  admin_id String @id @default(uuid())
+  user     User   @relation(fields: [user_id], references: [user_id])
+  user_id  String @unique
+}
+
+model Course {
+  course_id     String       @id @default(uuid())
+  title         String
+  description   String
+  instructor    User         @relation(fields: [instructor_id], references: [user_id], name: "InstructorCourses")
+  instructor_id String
+  chapters      Chapter[]
+  enrollments   Enrollment[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  status        CourseStatus @default(ACTIVE)
+  tags          Tag[]        @relation("CourseTags")
+}
+
+model Chapter {
+  chapter_id String     @id @default(uuid())
+  title      String
+  course     Course     @relation(fields: [course_id], references: [course_id])
+  course_id  String
+  materials  Material[]
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model Material {
+  material_id String       @id @default(uuid())
+  type        MaterialType
+  contentUrl  String
+  chapter     Chapter      @relation(fields: [chapter_id], references: [chapter_id])
+  chapter_id  String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Enrollment {
+  enrollment_id String   @id @default(uuid())
+  student       User     @relation(fields: [student_id], references: [user_id])
+  student_id    String
+  course        Course   @relation(fields: [course_id], references: [course_id])
+  course_id     String
+  enrolledAt    DateTime @default(now())
+}
+
+model Tag {
+  tag_id  String   @id @default(uuid())
+  name    String   @unique
+  courses Course[] @relation("CourseTags")
+}
+
+enum Role {
+  ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+
+enum MaterialType {
+  NOTE
+  PDF
+  VIDEO
+  LIVE_SESSION
+}
+
+enum CourseStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
