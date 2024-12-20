@@ -21,12 +21,14 @@ model User {
   enrollments Enrollment[]
   Instructor  Instructor?
   Admin       Admin?
+  Review      Review[]
+  Order       Order[]
 }
 
 model Instructor {
   instructor_id String  @id @default(uuid())
   bio           String?
-  avatarUrl     String?
+  avatar        String?
   user          User    @relation(fields: [user_id], references: [user_id])
   user_id       String  @unique
 }
@@ -41,14 +43,17 @@ model Course {
   course_id     String       @id @default(uuid())
   title         String
   description   String
+  price         Float
   instructor    User         @relation(fields: [instructor_id], references: [user_id], name: "InstructorCourses")
   instructor_id String
   chapters      Chapter[]
   enrollments   Enrollment[]
+  reviews       Review[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   status        CourseStatus @default(ACTIVE)
-  tags          Tag[]        @relation("CourseTags")
+  categories    Category[]   @relation("CourseCategories")
+  Order         Order[]
 }
 
 model Chapter {
@@ -80,10 +85,42 @@ model Enrollment {
   enrolledAt    DateTime @default(now())
 }
 
-model Tag {
-  tag_id  String   @id @default(uuid())
-  name    String   @unique
-  courses Course[] @relation("CourseTags")
+model Review {
+  review_id  String   @id @default(uuid())
+  rating     Int
+  comment    String?
+  student    User     @relation(fields: [student_id], references: [user_id])
+  student_id String
+  course     Course   @relation(fields: [course_id], references: [course_id])
+  course_id  String
+  createdAt  DateTime @default(now())
+}
+
+model Category {
+  category_id String   @id @default(uuid())
+  name        String   @unique
+  courses     Course[] @relation("CourseCategories")
+}
+
+model Order {
+  order_id   String    @id @default(uuid())
+  student    User      @relation(fields: [student_id], references: [user_id])
+  student_id String
+  course     Course    @relation(fields: [course_id], references: [course_id])
+  course_id  String
+  amount     Float
+  createdAt  DateTime  @default(now())
+  payments   Payment[]
+}
+
+model Payment {
+  payment_id String        @id @default(uuid())
+  order      Order         @relation(fields: [order_id], references: [order_id])
+  order_id   String
+  amount     Float
+  method     String
+  status     PaymentStatus
+  createdAt  DateTime      @default(now())
 }
 
 enum Role {
@@ -103,4 +140,10 @@ enum CourseStatus {
   ACTIVE
   INACTIVE
   ARCHIVED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
 }
