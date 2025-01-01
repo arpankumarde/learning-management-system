@@ -12,23 +12,23 @@ export async function createUser(payload: {
   role: "STUDENT" | "INSTRUCTOR";
 }) {
   try {
-    const hashedPassword = await bcrypt.hash(payload.password, 10);
+    const hashedPassword = await bcrypt.hash(payload?.password, 10);
 
     const user = await prisma.$transaction(async (prisma) => {
       const newUser = await prisma.user.create({
         data: {
-          firstName: payload.first_name,
-          lastName: payload.last_name,
-          email: payload.email,
+          firstName: payload?.first_name,
+          lastName: payload?.last_name,
+          email: payload?.email,
           password: hashedPassword,
-          role: payload.role,
+          role: payload?.role,
         },
       });
 
-      if (payload.role === "INSTRUCTOR") {
+      if (newUser?.role === "INSTRUCTOR") {
         await prisma.instructor.create({
           data: {
-            user_id: newUser.user_id,
+            user_id: newUser?.user_id,
           },
         });
       }
@@ -40,6 +40,34 @@ export async function createUser(payload: {
 
     return { user };
   } catch (error) {
+    console.error(error);
     return { error: "Failed to create user" };
+  }
+}
+
+export async function loginUser(payload: { email: string; password: string }) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: {
+        email: payload?.email,
+      },
+    });
+
+    if (!user) {
+      return { error: "User not found" };
+    }
+
+    const isValid = await bcrypt.compare(payload?.password, user?.password);
+
+    if (!isValid) {
+      return { error: "Invalid password" };
+    }
+
+    revalidatePath("/");
+
+    return { user };
+  } catch (error) {
+    console.error(error);
+    return { error: "Failed to login" };
   }
 }

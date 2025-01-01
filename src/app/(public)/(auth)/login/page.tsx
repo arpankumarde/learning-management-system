@@ -3,20 +3,56 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { loginUser } from "@/actions/users";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { GalleryVerticalEnd } from "lucide-react";
+import { setCookie } from "cookies-next";
 
 const Page = () => {
   const router = useRouter();
+
+  type Payload = {
+    email: string;
+    password: string;
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData.entries()) as Payload;
+
+    try {
+      const { user, error } = await loginUser(payload);
+
+      if (error) {
+        throw new Error("Failed to login user");
+      }
+
+      setCookie("lmsuser", user, {
+        maxAge: 60 * 60 * 24 * 30,
+      });
+
+      switch (user?.role) {
+        case "INSTRUCTOR":
+          router.push("/instructor");
+          break;
+        case "STUDENT":
+          router.push("/student");
+          break;
+        case "ADMIN":
+          router.push("/admin");
+          break;
+        default:
+          router.push("/");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Failed to login user");
+    }
+  };
 
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
@@ -31,7 +67,7 @@ const Page = () => {
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
-            <form className="flex flex-col gap-6">
+            <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">Login to your account</h1>
                 <p className="text-balance text-sm text-muted-foreground">
@@ -61,17 +97,6 @@ const Page = () => {
                     required
                   />
                 </div>
-
-                <Select name="role" required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose Account Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="STUDENT">Student</SelectItem>
-                    <SelectItem value="INSTRUCTOR">Instructor</SelectItem>
-                    <SelectItem value="ADMIN">Admin</SelectItem>
-                  </SelectContent>
-                </Select>
 
                 <Button type="submit" className="w-full">
                   Login

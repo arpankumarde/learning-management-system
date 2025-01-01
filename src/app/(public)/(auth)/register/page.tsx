@@ -15,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { GalleryVerticalEnd } from "lucide-react";
+import { setCookie } from "cookies-next/client";
 
 const Page = () => {
   const router = useRouter();
@@ -34,13 +35,17 @@ const Page = () => {
     const payload = Object.fromEntries(formData.entries()) as Payload;
 
     try {
-      const user = await createUser(payload);
+      const { user, error } = await createUser(payload);
 
-      if (user?.error) {
+      if (error) {
         throw new Error("Failed to create user");
       }
 
-      router.push(payload?.role === "INSTRUCTOR" ? "/instructor" : "/student");
+      setCookie("lmsuser", user, {
+        maxAge: 60 * 60 * 24 * 30,
+      });
+
+      router.push(user?.role === "INSTRUCTOR" ? "/instructor" : "/student");
     } catch (error) {
       console.error(error);
       alert("Failed to create user");
