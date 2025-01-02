@@ -42,6 +42,7 @@ model Admin {
 model Course {
   course_id     String       @id @default(uuid())
   title         String
+  banner        String?
   description   String
   price         Float
   instructor    User         @relation(fields: [instructor_id], references: [user_id], name: "InstructorCourses")
