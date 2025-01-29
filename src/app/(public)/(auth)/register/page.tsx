@@ -1,8 +1,6 @@
-"use client";
-
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 import { createUser } from "@/actions/users";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,38 +16,12 @@ import { GalleryVerticalEnd } from "lucide-react";
 import { setCookie } from "cookies-next/client";
 
 const Page = () => {
-  const router = useRouter();
-
   type Payload = {
     first_name: string;
     last_name: string;
     email: string;
     password: string;
     role: "STUDENT" | "INSTRUCTOR";
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const payload = Object.fromEntries(formData.entries()) as Payload;
-
-    try {
-      const { user, error } = await createUser(payload);
-
-      if (error) {
-        throw new Error("Failed to create user");
-      }
-
-      setCookie("lmsuser", user, {
-        maxAge: 60 * 60 * 24 * 30,
-      });
-
-      router.push(user?.role === "INSTRUCTOR" ? "/instructor" : "/student");
-    } catch (error) {
-      console.error(error);
-      alert("Failed to create user");
-    }
   };
 
   return (
@@ -65,7 +37,32 @@ const Page = () => {
         </div>
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">
-            <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
+            <form
+              className="flex flex-col gap-6"
+              action={async (e) => {
+                "use server";
+
+                try {
+                  const payload = Object.fromEntries(e.entries()) as Payload;
+
+                  const { user, error } = await createUser(payload);
+
+                  if (error) {
+                    throw new Error("Failed to create user");
+                  }
+
+                  setCookie("lmsuser", user, {
+                    maxAge: 60 * 60 * 24 * 30,
+                  });
+
+                  redirect(
+                    user?.role === "INSTRUCTOR" ? "/instructor" : "/student"
+                  );
+                } catch (error) {
+                  console.error(error);
+                }
+              }}
+            >
               <div className="flex flex-col items-center gap-2 text-center">
                 <h1 className="text-2xl font-bold">Create your account</h1>
                 <p className="text-balance text-sm text-muted-foreground">
